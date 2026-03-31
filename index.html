@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>IBL Survey Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0D1B4B;
+  --ink2:#1a2d5a;
+  --ink3:#6b7a9e;
+  --paper:#f5f8fc;
+  --paper2:#eaf1f8;
+  --paper3:#dce8f3;
+  --line:rgba(13,27,75,.09);
+  --line2:rgba(13,27,75,.18);
+  --accent:#0D1B4B;
+  --accent2:#00B4B4;
+  --gold:#E91E8C;
+  --teal:#00B4B4;
+  --rose:#E91E8C;
+  --sage:#00897B;
+  --amber:#0094A8;
+  --r:8px;--rl:14px;
+  /* team colours — IBL-flavoured */
+  --finance:#0D1B4B;
+  --operations:#00B4B4;
+  --investment:#0077A8;
+  --business:#E91E8C;
+  --core:#7B3FA0;
+}
+
+
+
+body{font-family:'DM Sans',sans-serif;background:#edf3f9;color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* ── SHELL ── */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;background:#0D1B4B;color:#fff;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08);border-top:3px solid #00B4B4}
+.sidebar-brand h1{font-family:'DM Serif Display',serif;font-size:17px;line-height:1.3;color:#fff}
+.sidebar-brand span{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase}
+.sidebar-nav{padding:16px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav-item.active{color:#fff;background:rgba(255,255,255,.10);border-left-color:#00B4B4}
+.nav-icon{width:16px;height:16px;opacity:.7;flex-shrink:0}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.import-btn-side{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:var(--r);color:#fff;font-size:12px;font-weight:500;cursor:pointer;position:relative;transition:background .15s}
+.import-btn-side:hover{background:rgba(255,255,255,.14)}
+.import-btn-side input{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+.main{flex:1;overflow-y:auto;min-width:0}
+
+/* ── PAGES ── */
+.page{display:none;padding:32px 36px;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── PAGE HEADERS ── */
+.page-header{margin-bottom:28px}
+.page-header h2{font-family:'DM Serif Display',serif;font-size:28px;font-weight:400;color:#0D1B4B}
+.page-header p{font-size:13px;color:var(--ink3);margin-top:4px}
+.page-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* ── FILTERS BAR ── */
+.filters-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.filter-select{font-size:12px;padding:6px 10px;border-radius:var(--r);border:1px solid var(--line2);background:var(--paper);color:var(--ink);cursor:pointer;outline:none}
+.filter-label{font-size:12px;color:var(--ink3)}
+.filter-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:99px;border:1px solid var(--line2);color:var(--ink2);cursor:pointer;background:var(--paper);transition:all .15s;user-select:none}
+.filter-pill:hover{background:var(--paper3)}
+.filter-pill.active{background:#0D1B4B;color:#fff;border-color:#0D1B4B}
+.filter-pill .dot{width:6px;height:6px;border-radius:50%}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--kpi-color,var(--accent))}
+.kpi .k-label{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kpi .k-val{font-size:26px;font-weight:600;color:var(--ink);line-height:1}
+.kpi .k-sub{font-size:11px;color:var(--ink3);margin-top:4px}
+
+/* ── CATEGORY PILLS row ── */
+.cat-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+.cat-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;border:1px solid var(--line2);font-size:12px;font-weight:500;cursor:pointer;background:var(--paper);color:var(--ink2);transition:all .15s;user-select:none}
+.cat-pill:hover{background:var(--paper3)}
+.cat-pill.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.cat-pill .badge{background:var(--paper3);color:var(--ink2);font-size:10px;padding:1px 6px;border-radius:99px;font-weight:600}
+.cat-pill.active .badge{background:rgba(255,255,255,.2);color:#fff}
+
+/* ── SURVEY TABLE ── */
+.table-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);overflow:hidden}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:11px 14px;font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;background:var(--paper2);border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:13px 14px;border-bottom:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer;transition:background .12s}
+tbody tr:hover td{background:var(--paper2)}
+
+/* team badge */
+.team-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+/* status badge */
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+.status-completed{background:#d0f4f4;color:#007a7a}
+.status-inprogress{background:#fce8f4;color:#c0006e}
+
+/* response rate bar */
+.rr-cell{display:flex;align-items:center;gap:8px}
+.rr-bar{flex:1;height:6px;background:var(--paper3);border-radius:99px;overflow:hidden;min-width:60px;max-width:90px}
+.rr-fill{height:100%;border-radius:99px}
+.rr-val{font-weight:600;font-size:12px;min-width:34px}
+
+/* ── COVERAGE GRID ── */
+.coverage-section{margin-top:28px}
+.section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:14px}
+.coverage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.team-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px;position:relative;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.team-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.team-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--tc,#888)}
+.team-card h3{font-size:13px;font-weight:600;margin-bottom:10px;padding-left:8px}
+.team-stat{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:5px;padding-left:8px}
+.team-stat strong{color:var(--ink);font-weight:600}
+.team-ring{margin-top:10px;padding-left:8px}
+.ring-track{height:6px;background:var(--paper3);border-radius:99px;overflow:hidden}
+.ring-fill{height:100%;border-radius:99px;background:var(--tc,#888)}
+
+/* ── PAGE 2: QUESTION REACTIONS ── */
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3);cursor:pointer;margin-bottom:20px;padding:6px 12px;border:1px solid var(--line2);border-radius:var(--r);background:var(--paper);transition:background .12s}
+.back-btn:hover{background:var(--paper3)}
+
+.survey-meta-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.meta-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 12px;border-radius:99px;background:var(--paper);border:1px solid var(--line)}
+.meta-chip .mc-label{color:var(--ink3)}
+.meta-chip .mc-val{color:var(--ink);font-weight:600}
+
+/* Heatmap */
+.heatmap-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);overflow:hidden;margin-bottom:24px}
+.heatmap-scroll{overflow-x:auto}
+.heatmap-table{border-collapse:collapse;width:100%;font-size:12px}
+.hm-th{padding:10px 12px;font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:var(--paper2);border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;text-align:center}
+.hm-th-q{text-align:left;min-width:200px}
+.hm-td{padding:10px 12px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:center;font-weight:600;transition:filter .15s}
+.hm-td:last-child,.hm-th:last-child{border-right:none}
+.hm-td-q{text-align:left;background:var(--paper2);position:sticky;left:0;z-index:1;border-right:1px solid var(--line2)}
+.hm-qid{font-size:10px;color:var(--ink3);margin-bottom:1px}
+.hm-qtext{font-size:12px;color:var(--ink);white-space:normal;max-width:220px;line-height:1.3}
+
+/* Question detail cards */
+.q-cards{display:grid;gap:12px}
+.q-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:18px 20px}
+.q-card-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.q-card-id{width:36px;height:36px;border-radius:var(--r);background:#00B4B4;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.q-card-meta h4{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:3px}
+.q-card-meta span{font-size:11px;color:var(--ink3)}
+.q-type-badge{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--paper2);color:var(--ink2);margin-left:6px}
+
+/* Likert bar */
+.likert-bars{margin-top:8px}
+.likert-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.likert-label{font-size:11px;color:var(--ink2);width:120px;flex-shrink:0;text-align:right}
+.likert-track{flex:1;height:10px;background:var(--paper3);border-radius:99px;overflow:hidden}
+.likert-fill{height:100%;border-radius:99px}
+.likert-pct{font-size:11px;font-weight:600;color:var(--ink);width:34px;text-align:right}
+.topline{display:flex;gap:12px;margin-top:10px;padding:10px 12px;background:var(--paper2);border-radius:var(--r)}
+.topline-item .tl-label{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+.topline-item .tl-val{font-size:18px;font-weight:700;color:var(--ink)}
+
+/* Choice bars */
+.choice-bars{margin-top:8px}
+.choice-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.choice-label{font-size:12px;color:var(--ink2);flex:1}
+.choice-track{width:160px;height:10px;background:var(--paper3);border-radius:99px;overflow:hidden}
+.choice-fill{height:100%;border-radius:99px;background:var(--accent)}
+.choice-pct{font-size:12px;font-weight:600;color:var(--ink);width:34px;text-align:right}
+
+/* Sentiment */
+.sentiment-bar{display:flex;height:24px;border-radius:var(--r);overflow:hidden;margin:8px 0}
+.sentiment-bar div{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;transition:flex .4s}
+.themes-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.theme-chip{display:inline-flex;align-items:center;font-size:11px;padding:3px 10px;border-radius:99px;background:var(--paper2);color:var(--ink2);border:1px solid var(--line)}
+
+/* ── PAGE 3: COMPARISON ── */
+.comp-header-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:24px}
+.comp-team-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);padding:14px 16px;border-top:3px solid var(--tc)}
+.comp-team-card h4{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.comp-stat{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.comp-stat .cs-label{color:var(--ink3)}
+.comp-stat .cs-val{font-weight:600;color:var(--ink)}
+
+.cross-heatmap-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--rl);overflow:hidden}
+.cross-heatmap-scroll{overflow-x:auto}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--ink);color:var(--paper);font-size:13px;font-weight:500;padding:9px 20px;border-radius:99px;z-index:999;transition:transform .25s,opacity .25s;opacity:0;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ── MODAL ── */
+#modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center}
+#modal-ov.show{display:flex}
+#modal-box{background:var(--paper);border-radius:var(--rl);border:1px solid var(--line2);padding:24px;max-width:360px;width:90%;text-align:center}
+#modal-box h3{font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:8px}
+#modal-box p{font-size:13px;color:var(--ink2);margin-bottom:20px}
+#modal-box .actions{display:flex;gap:8px;justify-content:center}
+.mbtn{padding:8px 18px;border-radius:var(--r);border:1px solid var(--line2);background:var(--paper);color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;transition:background .12s}
+.mbtn:hover{background:var(--paper3)}
+.mbtn.danger{color:#c0006e;border-color:#c0006e}
+.mbtn.danger:hover{background:#fce8f4}
+
+/* import drop zone */
+.drop-zone{border:1.5px dashed var(--line2);border-radius:var(--rl);padding:28px;text-align:center;cursor:pointer;color:var(--ink3);font-size:13px;position:relative;transition:all .15s;margin-bottom:20px}
+.drop-zone:hover,.drop-zone.drag-over{background:var(--paper);border-color:var(--ink3)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.drop-zone strong{display:block;font-size:14px;color:var(--ink);font-weight:600;margin-bottom:4px}
+.dz-icon{font-size:28px;margin-bottom:8px}
+
+/* storage bar */
+#storage-bar{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:7px 14px;font-size:11px;color:var(--ink3);margin-bottom:20px;flex-wrap:wrap}
+#st-track{height:4px;background:var(--paper3);border-radius:99px;width:100px;flex-shrink:0}
+#st-fill{height:100%;border-radius:99px;background:#00B4B4;transition:width .4s}
+#st-count{margin-left:auto;font-weight:600;color:var(--ink)}
+
+.empty-pg{text-align:center;padding:60px 20px;color:var(--ink3);font-size:13px}
+.empty-pg .ep-icon{font-size:36px;margin-bottom:12px}
+.empty-pg h3{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink2);margin-bottom:6px}
+
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.5}}
+.flash{animation:flash .4s ease}
+
+/* responsive */
+@media(max-width:700px){
+  .sidebar{width:60px}
+  .sidebar-brand h1,.sidebar-brand span,.nav-item span,.import-btn-side span{display:none}
+  .page{padding:20px 16px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="width:36px;height:36px;background:#00B4B4;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="8" height="8" rx="1.5" fill="white"/>
+          <rect x="12" y="2" width="8" height="8" rx="1.5" fill="white" opacity="0.6"/>
+          <rect x="2" y="12" width="8" height="8" rx="1.5" fill="white" opacity="0.6"/>
+          <rect x="12" y="12" width="8" height="8" rx="1.5" fill="#E91E8C"/>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.2;letter-spacing:0.01em">IBL Survey Hub</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;margin-top:1px">IBL Energy</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-page="summary">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+      <span>All Surveys</span>
+    </div>
+    <div class="nav-item" data-page="questions">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h6"/></svg>
+      <span>Question Reactions</span>
+    </div>
+    <div class="nav-item" data-page="comparison">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="6" width="3" height="9"/><rect x="6" y="3" width="3" height="12"/><rect x="11" y="1" width="3" height="14"/></svg>
+      <span>Team Comparison</span>
+    </div>
+    <div class="nav-item" data-page="import">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 13h12"/></svg>
+      <span>Import Data</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <label class="import-btn-side">
+      <input type="file" accept=".csv" id="csv-quick"/>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 13h12"/></svg>
+      <span>Quick Import</span>
+    </label>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ═══════════════ PAGE: SUMMARY ═══════════════ -->
+<section class="page active" id="page-summary">
+  <div class="page-header-row">
+    <div class="page-header">
+      <h2>All Surveys Overview</h2>
+      <p id="summary-subtitle">Loading saved data…</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="mbtn" id="export-btn">↓ Export</button>
+      <button class="mbtn danger" id="clear-btn">✕ Clear</button>
+    </div>
+  </div>
+
+  <div id="storage-bar">
+    <span>💾 Stored locally</span>
+    <div id="st-track"><div id="st-fill" style="width:0%"></div></div>
+    <span id="st-size">0 KB</span>
+    <span id="st-count">0 surveys</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-strip" id="kpi-strip">
+    <div class="kpi" style="--kpi-color:var(--accent)"><div class="k-label">Total Surveys</div><div class="k-val" id="k-total">0</div><div class="k-sub">instances</div></div>
+    <div class="kpi" style="--kpi-color:var(--teal)"><div class="k-label">People Invited</div><div class="k-val" id="k-invited">0</div><div class="k-sub">across all surveys</div></div>
+    <div class="kpi" style="--kpi-color:var(--sage)"><div class="k-label">Responses</div><div class="k-val" id="k-responses">0</div><div class="k-sub">collected</div></div>
+    <div class="kpi" style="--kpi-color:var(--gold)"><div class="k-label">Avg Response Rate</div><div class="k-val" id="k-rr">—</div><div class="k-sub">overall</div></div>
+    <div class="kpi" style="--kpi-color:var(--rose)"><div class="k-label">In Progress</div><div class="k-val" id="k-inprog">0</div><div class="k-sub">active surveys</div></div>
+  </div>
+
+  <!-- Category pills -->
+  <div class="cat-pills" id="cat-pills"></div>
+
+  <!-- Team filter pills -->
+  <div class="filters-bar" id="team-filter-bar">
+    <span class="filter-label">Team:</span>
+    <span class="filter-pill active" data-team="all">All teams</span>
+    <span class="filter-pill" data-team="Finance" style="--dot:#0D1B4B"><span class="dot" style="background:#0D1B4B"></span>Finance</span>
+    <span class="filter-pill" data-team="Operations" style="--dot:#00B4B4"><span class="dot" style="background:#00B4B4"></span>Operations</span>
+    <span class="filter-pill" data-team="Investment/Legal"><span class="dot" style="background:#0077A8"></span>Investment/Legal</span>
+    <span class="filter-pill" data-team="Business Growth"><span class="dot" style="background:#E91E8C"></span>Business Growth</span>
+    <span class="filter-pill" data-team="Core Enablers"><span class="dot" style="background:#7B3FA0"></span>Core Enablers</span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card" id="summary-table-wrap">
+    <div class="empty-pg"><div class="ep-icon">📋</div><h3>No surveys yet</h3><p>Import a CSV or add a survey manually via the Import page.</p></div>
+  </div>
+
+  <!-- Coverage grid -->
+  <div class="coverage-section">
+    <div class="section-title">Coverage by Capability Team</div>
+    <div class="coverage-grid" id="coverage-grid"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ PAGE: QUESTION REACTIONS ═══════════════ -->
+<section class="page" id="page-questions">
+  <div class="back-btn" id="back-to-summary">← Back to overview</div>
+  <div class="page-header">
+    <h2 id="q-page-title">Question Reactions</h2>
+    <p id="q-page-sub">Select a survey from the overview to see its questions</p>
+  </div>
+
+  <div class="survey-meta-bar" id="q-meta-bar"></div>
+
+  <!-- Heatmap -->
+  <div class="section-title" style="margin-bottom:12px">Response Heatmap — % Positive by Question</div>
+  <div class="heatmap-wrap" id="heatmap-wrap">
+    <div class="empty-pg"><div class="ep-icon">🔥</div><h3>Select a survey</h3><p>The heatmap will appear here.</p></div>
+  </div>
+
+  <!-- Question cards -->
+  <div class="section-title" style="margin:24px 0 12px">Question Detail</div>
+  <div class="q-cards" id="q-cards"></div>
+</section>
+
+<!-- ═══════════════ PAGE: TEAM COMPARISON ═══════════════ -->
+<section class="page" id="page-comparison">
+  <div class="page-header">
+    <h2>Team Comparison</h2>
+    <p>Group same surveys across all capability teams — spot strengths and gaps at a glance</p>
+  </div>
+
+  <div class="filters-bar">
+    <span class="filter-label">Survey type:</span>
+    <select class="filter-select" id="comp-survey-select"><option value="">Select survey type…</option></select>
+  </div>
+
+  <div id="comp-content">
+    <div class="empty-pg"><div class="ep-icon">📊</div><h3>Choose a survey type</h3><p>Select a survey type above to compare results across all capability teams.</p></div>
+  </div>
+</section>
+
+<!-- ═══════════════ PAGE: IMPORT ═══════════════ -->
+<section class="page" id="page-import">
+  <div class="page-header">
+    <h2>Import Survey Data</h2>
+    <p>Add surveys manually or import a CSV export from Microsoft Forms</p>
+  </div>
+
+  <!-- Manual form -->
+  <div class="table-card" style="padding:24px;margin-bottom:20px">
+    <div class="section-title" style="margin-bottom:16px">Add a survey instance manually</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="manual-form-grid">
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Survey Name *</label>
+        <input id="f-name" placeholder="e.g. Value-based Behaviour Survey" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Category</label>
+        <input id="f-cat" placeholder="e.g. eNPS, Workshop Feedback" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Capability Team *</label>
+        <select id="f-team" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none">
+          <option value="">Select…</option>
+          <option>Finance</option><option>Operations</option>
+          <option>Investment/Legal</option><option>Business Growth</option><option>Core Enablers</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Status</label>
+        <select id="f-status" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none">
+          <option>Completed</option><option>In progress</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Launch Date</label>
+        <input id="f-launch" type="date" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Close Date</label>
+        <input id="f-close" type="date" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em"># People Invited</label>
+        <input id="f-invited" type="number" min="0" placeholder="e.g. 25" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em"># Responses</label>
+        <input id="f-responses" type="number" min="0" placeholder="e.g. 20" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none"/>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Question Results (JSON — optional)</label>
+      <textarea id="f-questions" rows="4" placeholder='[{"id":"Q1","text":"I feel valued at work","type":"Likert","answers":120,"pct_positive":72,"avg_score":3.8,"distribution":{"Strongly Disagree":5,"Disagree":10,"Neutral":13,"Agree":42,"Strongly Agree":50}},{"id":"Q2","text":"My manager supports me","type":"Likert","answers":118,"pct_positive":68,"avg_score":3.6}]' style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:12px;font-family:monospace;background:var(--paper);color:var(--ink);outline:none;resize:vertical"></textarea>
+      <p style="font-size:11px;color:var(--ink3);margin-top:4px">Paste an array of question objects. Fields: id, text, type (Likert/Rating/Multiple Choice/Text), answers, pct_positive, avg_score, distribution (object), choices (object), sentiment, themes (array), comment_count.</p>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px">
+      <button class="mbtn" id="add-survey-btn" style="background:#00B4B4;color:#fff;border-color:#00B4B4">Add Survey</button>
+      <button class="mbtn" id="clear-form-btn">Clear</button>
+    </div>
+  </div>
+
+  <!-- CSV drop -->
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" accept=".csv" id="csv-input"/>
+    <div class="dz-icon">📄</div>
+    <strong>Drop Microsoft Forms CSV export here</strong>
+    <span>or click to browse — rows are matched and merged</span>
+    <div style="margin-top:8px;font-size:11px;color:var(--ink3)">Expected columns: Survey Name · Category · Capability Team · Launch Date · Close Date · People Invited · Responses · Status</div>
+  </div>
+
+  <!-- Stored list -->
+  <div class="section-title" style="margin-bottom:12px">Stored Surveys (<span id="stored-count">0</span>)</div>
+  <div class="table-card" id="import-list-wrap">
+    <div class="empty-pg" style="padding:30px"><div class="ep-icon">📭</div><h3>No surveys stored</h3></div>
+  </div>
+
+  <details style="margin-top:16px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;font-size:13px;color:var(--ink2)">
+    <summary style="cursor:pointer;font-weight:600;color:var(--ink)">CSV format guide</summary>
+    <div style="margin-top:10px;line-height:2">
+      Required columns: <code>Survey Name, Capability Team</code><br>
+      Optional: <code>Category, Launch Date, Close Date, People Invited, Responses, Status</code><br>
+      For question data, add columns: <code>Q1 Text, Q1 Type, Q1 Answers, Q1 % Positive, Q1 Avg Score</code> etc.<br>
+      <strong>Tip:</strong> Export from Microsoft Forms → Open in Excel → Save as CSV UTF-8.
+    </div>
+  </details>
+</section>
+
+</main>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Modal -->
+<div id="modal-ov">
+  <div id="modal-box">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-msg"></p>
+    <div class="actions">
+      <button class="mbtn" id="modal-cancel">Cancel</button>
+      <button class="mbtn danger" id="modal-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════ DATA LAYER ═══════════ */
+const SURVEYS_KEY = 'sih_surveys_v2';
+let surveys = []; // array of survey objects
+let activeCat = 'all';
+let activeTeam = 'all';
+let selectedSurveyId = null;
+
+const TEAMS = ['Finance','Operations','Investment/Legal','Business Growth','Core Enablers'];
+const TEAM_COLORS = {
+  'Finance':'#0D1B4B','Operations':'#00B4B4',
+  'Investment/Legal':'#0077A8','Business Growth':'#E91E8C','Core Enablers':'#7B3FA0'
+};
+
+function saveData(){
+  try{ localStorage.setItem(SURVEYS_KEY, JSON.stringify(surveys)); }
+  catch(e){ toast('⚠️ Storage full'); }
+  updateStorageBar();
+}
+function loadData(){
+  try{ const d=localStorage.getItem(SURVEYS_KEY); surveys=d?JSON.parse(d):[]; }
+  catch(e){ surveys=[]; }
+}
+function updateStorageBar(){
+  const raw=localStorage.getItem(SURVEYS_KEY)||'';
+  const kb=(new Blob([raw]).size/1024).toFixed(0);
+  const pct=Math.min(100,new Blob([raw]).size/(5*1024*1024)*100);
+  document.getElementById('st-fill').style.width=pct.toFixed(1)+'%';
+  document.getElementById('st-size').textContent=kb+' KB';
+  document.getElementById('st-count').textContent=surveys.length+' surveys';
+}
+
+/* ═══════════ NAVIGATION ═══════════ */
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+}
+document.querySelectorAll('.nav-item').forEach(n=>{
+  n.addEventListener('click',()=>{ navigate(n.dataset.page); if(n.dataset.page==='summary') renderSummary(); if(n.dataset.page==='comparison') renderComparison(); if(n.dataset.page==='import') renderImportList(); });
+});
+document.getElementById('back-to-summary').addEventListener('click',()=>navigate('summary'));
+
+/* ═══════════ TOAST ═══════════ */
+let _tt;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ═══════════ MODAL ═══════════ */
+function confirm(title,msg,okLabel='Delete'){
+  return new Promise(res=>{
+    document.getElementById('modal-title').textContent=title;
+    document.getElementById('modal-msg').textContent=msg;
+    document.getElementById('modal-ok').textContent=okLabel;
+    const ov=document.getElementById('modal-ov');
+    ov.classList.add('show');
+    const done=v=>{ov.classList.remove('show');res(v);};
+    document.getElementById('modal-ok').onclick=()=>done(true);
+    document.getElementById('modal-cancel').onclick=()=>done(false);
+    ov.onclick=e=>{if(e.target===ov)done(false);};
+  });
+}
+
+/* ═══════════ HELPERS ═══════════ */
+const uid=()=>Math.random().toString(36).slice(2,9);
+const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
+function rrColor(r){
+  if(r>=80) return '#007a7a';
+  if(r>=60) return '#0094A8';
+  return '#E91E8C';
+}
+function fmt(n){return n===undefined||n===null?'—':Number(n).toLocaleString();}
+function fmtDate(d){if(!d)return '—';const dt=new Date(d);return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+
+/* ═══════════ SUMMARY PAGE ═══════════ */
+function renderSummary(){
+  const filtered = surveys.filter(s=>{
+    if(activeCat!=='all' && s.category!==activeCat) return false;
+    if(activeTeam!=='all' && s.team!==activeTeam) return false;
+    return true;
+  });
+
+  // KPIs
+  const totalInvited = filtered.reduce((a,s)=>a+(+s.invited||0),0);
+  const totalResp    = filtered.reduce((a,s)=>a+(+s.responses||0),0);
+  const rrs          = filtered.filter(s=>s.invited>0).map(s=>s.responses/s.invited*100);
+  const avgRR        = rrs.length ? avg(rrs).toFixed(0)+'%' : '—';
+  const inProg       = filtered.filter(s=>s.status==='In progress').length;
+  document.getElementById('k-total').textContent    = filtered.length;
+  document.getElementById('k-invited').textContent  = fmt(totalInvited);
+  document.getElementById('k-responses').textContent= fmt(totalResp);
+  document.getElementById('k-rr').textContent       = avgRR;
+  document.getElementById('k-inprog').textContent   = inProg;
+  document.getElementById('summary-subtitle').textContent =
+    surveys.length ? `${surveys.length} survey instances stored · showing ${filtered.length}` : 'No surveys yet — go to Import to add your first survey';
+
+  // Category pills
+  const cats = ['all',...new Set(surveys.map(s=>s.category).filter(Boolean))];
+  const catCounts = {};
+  surveys.forEach(s=>{ if(s.category){ catCounts[s.category]=(catCounts[s.category]||0)+1; } });
+  document.getElementById('cat-pills').innerHTML = cats.map(c=>`
+    <span class="cat-pill ${activeCat===c?'active':''}" data-cat="${c}">
+      ${c==='all'?'All Surveys':c}
+      <span class="badge">${c==='all'?surveys.length:catCounts[c]||0}</span>
+    </span>`).join('');
+  document.querySelectorAll('.cat-pill').forEach(p=>{
+    p.addEventListener('click',()=>{ activeCat=p.dataset.cat; renderSummary(); });
+  });
+
+  // Table
+  if(!filtered.length){
+    document.getElementById('summary-table-wrap').innerHTML=`<div class="empty-pg"><div class="ep-icon">📋</div><h3>No surveys match this filter</h3><p>Try a different category or team.</p></div>`;
+  } else {
+    const rows = filtered.map(s=>{
+      const rr = s.invited>0 ? Math.round(s.responses/s.invited*100) : null;
+      const tc = TEAM_COLORS[s.team]||'#888';
+      const statusCls = s.status==='Completed'?'status-completed':'status-inprogress';
+      return `<tr data-id="${s.id}">
+        <td><strong style="font-size:13px">${s.name}</strong><div style="font-size:11px;color:var(--ink3)">${s.category||'—'}</div></td>
+        <td><span class="team-badge" style="background:${tc}22;color:${tc}"><span style="width:6px;height:6px;border-radius:50%;background:${tc};display:inline-block"></span>${s.team||'—'}</span></td>
+        <td>${fmtDate(s.launchDate)}</td>
+        <td>${fmtDate(s.closeDate)}</td>
+        <td style="text-align:right;font-weight:600">${fmt(s.invited)}</td>
+        <td style="text-align:right;font-weight:600">${fmt(s.responses)}</td>
+        <td>
+          <div class="rr-cell">
+            <div class="rr-bar"><div class="rr-fill" style="width:${rr||0}%;background:${rrColor(rr||0)}"></div></div>
+            <span class="rr-val" style="color:${rrColor(rr||0)}">${rr!==null?rr+'%':'—'}</span>
+          </div>
+        </td>
+        <td><span class="status-badge ${statusCls}">${s.status||'—'}</span></td>
+        <td><button class="mbtn" style="font-size:11px;padding:4px 10px" onclick="openSurvey('${s.id}',event)">View →</button></td>
+      </tr>`;
+    }).join('');
+    document.getElementById('summary-table-wrap').innerHTML=`
+      <div class="tbl-scroll"><table>
+        <thead><tr>
+          <th>Survey</th><th>Team</th><th>Launch</th><th>Close</th>
+          <th style="text-align:right">Invited</th><th style="text-align:right">Responses</th>
+          <th>Response Rate</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+    // row click
+    document.querySelectorAll('#summary-table-wrap tbody tr').forEach(tr=>{
+      tr.addEventListener('click',()=>openSurvey(tr.dataset.id));
+    });
+  }
+
+  // Coverage grid
+  const grid = document.getElementById('coverage-grid');
+  grid.innerHTML = TEAMS.map(team=>{
+    const ts = surveys.filter(s=>s.team===team);
+    const ti = ts.reduce((a,s)=>a+(+s.invited||0),0);
+    const tr = ts.reduce((a,s)=>a+(+s.responses||0),0);
+    const rr = ti>0?Math.round(tr/ti*100):0;
+    const tc = TEAM_COLORS[team]||'#888';
+    return `<div class="team-card" style="--tc:${tc}" onclick="filterTeam('${team}')">
+      <h3>${team}</h3>
+      <div class="team-stat"><span>Surveys</span><strong>${ts.length}</strong></div>
+      <div class="team-stat"><span>Invited</span><strong>${fmt(ti)}</strong></div>
+      <div class="team-stat"><span>Responses</span><strong>${fmt(tr)}</strong></div>
+      <div class="team-stat"><span>Response Rate</span><strong style="color:${rrColor(rr)}">${ti>0?rr+'%':'—'}</strong></div>
+      <div class="team-ring"><div class="ring-track"><div class="ring-fill" style="width:${rr}%;background:${tc}"></div></div></div>
+    </div>`;
+  }).join('');
+}
+
+function filterTeam(team){
+  activeTeam = (activeTeam===team)?'all':team;
+  document.querySelectorAll('#team-filter-bar .filter-pill').forEach(p=>{
+    p.classList.toggle('active', p.dataset.team===activeTeam||(activeTeam==='all'&&p.dataset.team==='all'));
+  });
+  renderSummary();
+}
+
+document.getElementById('#team-filter-bar')&&document.getElementById('team-filter-bar').addEventListener('click',e=>{
+  const p=e.target.closest('.filter-pill'); if(!p)return;
+  activeTeam=p.dataset.team; renderSummary();
+});
+document.getElementById('team-filter-bar').addEventListener('click',e=>{
+  const p=e.target.closest('.filter-pill'); if(!p)return;
+  activeTeam=p.dataset.team;
+  document.querySelectorAll('#team-filter-bar .filter-pill').forEach(x=>x.classList.toggle('active',x===p));
+  renderSummary();
+});
+
+/* ═══════════ QUESTION REACTIONS PAGE ═══════════ */
+function openSurvey(id, evt){
+  if(evt) evt.stopPropagation();
+  selectedSurveyId=id;
+  navigate('questions');
+  renderQuestions(id);
+}
+
+function renderQuestions(id){
+  const s = surveys.find(x=>x.id===id);
+  if(!s){ document.getElementById('q-page-title').textContent='Survey not found'; return; }
+
+  document.getElementById('q-page-title').textContent = s.name;
+  document.getElementById('q-page-sub').textContent   = `${s.team} · ${s.category||'—'} · ${fmtDate(s.launchDate)}`;
+
+  const rr = s.invited>0?Math.round(s.responses/s.invited*100):null;
+  const tc = TEAM_COLORS[s.team]||'#888';
+  document.getElementById('q-meta-bar').innerHTML=[
+    ['Survey ID',s.id],['Type',s.category||'—'],
+    ['Team',`<span style="color:${tc};font-weight:700">${s.team||'—'}</span>`],
+    ['Responses',fmt(s.responses)],['Response Rate',rr!==null?rr+'%':'—'],
+    ['Status',s.status||'—']
+  ].map(([l,v])=>`<span class="meta-chip"><span class="mc-label">${l}:&nbsp;</span><span class="mc-val">${v}</span></span>`).join('');
+
+  const qs = s.questions||[];
+
+  // Heatmap
+  renderHeatmap(qs, s);
+
+  // Question cards
+  if(!qs.length){
+    document.getElementById('q-cards').innerHTML='<div class="empty-pg"><div class="ep-icon">❓</div><h3>No questions stored</h3><p>Add question data via the Import page using the JSON field.</p></div>';
+    return;
+  }
+  document.getElementById('q-cards').innerHTML = qs.map(q=>renderQCard(q)).join('');
+}
+
+function renderHeatmap(qs, s){
+  const ratingQs = qs.filter(q=>q.type==='Likert'||q.type==='Rating');
+  if(!ratingQs.length){
+    document.getElementById('heatmap-wrap').innerHTML='<div class="empty-pg"><div class="ep-icon">🔥</div><h3>No rating questions</h3><p>Heatmap requires Likert or Rating questions.</p></div>';
+    return;
+  }
+  // For single survey: show questions vs avg score / % positive
+  const rows = ratingQs.map(q=>{
+    const pct = q.pct_positive||0;
+    const color = heatColor(pct);
+    return `<tr>
+      <td class="hm-td hm-td-q"><div class="hm-qid">${q.id}</div><div class="hm-qtext">${q.text}</div></td>
+      <td class="hm-td" style="background:${color};color:${pct>50?'#fff':'#333'}">${pct}%</td>
+      <td class="hm-td">${q.avg_score?q.avg_score.toFixed(1):'—'}</td>
+      <td class="hm-td">${fmt(q.answers)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('heatmap-wrap').innerHTML=`
+    <div class="heatmap-scroll"><table class="heatmap-table">
+      <thead><tr>
+        <th class="hm-th hm-th-q">Question</th>
+        <th class="hm-th">% Positive</th>
+        <th class="hm-th">Avg Score</th>
+        <th class="hm-th"># Answers</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function heatColor(pct){
+  if(pct>=75) return '#007a7a';
+  if(pct>=60) return '#00B4B4';
+  if(pct>=45) return '#0094A8';
+  if(pct>=30) return '#c0006e';
+  return '#8c0050';
+}
+
+function renderQCard(q){
+  const typeBadge=`<span class="q-type-badge">${q.type||'Unknown'}</span>`;
+  let body='';
+  const type=(q.type||'').toLowerCase();
+
+  if(type==='likert'||type==='rating'){
+    const dist = q.distribution||{};
+    const labels = Object.keys(dist);
+    const vals   = Object.values(dist);
+    const total  = vals.reduce((a,b)=>a+b,0)||1;
+    const colors = ['#8c0050','#c0006e','#0094A8','#00B4B4','#007a7a'];
+    body=`
+      <div class="likert-bars">
+        ${labels.map((l,i)=>{
+          const pct=Math.round(vals[i]/total*100);
+          return `<div class="likert-row">
+            <span class="likert-label">${l}</span>
+            <div class="likert-track"><div class="likert-fill" style="width:${pct}%;background:${colors[i%colors.length]}"></div></div>
+            <span class="likert-pct">${pct}%</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="topline">
+        ${q.pct_positive!==undefined?`<div class="topline-item"><div class="tl-label">% Positive</div><div class="tl-val" style="color:#007a7a">${q.pct_positive}%</div></div>`:''}
+        ${q.avg_score!==undefined?`<div class="topline-item"><div class="tl-label">Avg Score</div><div class="tl-val">${q.avg_score.toFixed(1)}</div></div>`:''}
+        <div class="topline-item"><div class="tl-label"># Answers</div><div class="tl-val">${fmt(q.answers)}</div></div>
+      </div>`;
+  } else if(type==='multiple choice'||type==='yes/no'){
+    const choices = q.choices||{};
+    const ck=Object.keys(choices); const cv=Object.values(choices);
+    const tot=cv.reduce((a,b)=>a+b,0)||1;
+    body=`<div class="choice-bars">
+      ${ck.map((k,i)=>{
+        const pct=Math.round(cv[i]/tot*100);
+        return `<div class="choice-row">
+          <span class="choice-label">${k}</span>
+          <div class="choice-track"><div class="choice-fill" style="width:${pct}%;opacity:${0.5+0.5*(i/ck.length)}"></div></div>
+          <span class="choice-pct">${pct}%</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--ink3);margin-top:6px">${fmt(q.answers)} answers</div>`;
+  } else if(type==='text'||type==='open'){
+    const sent  = q.sentiment||'Neutral';
+    const sentColors={'Positive':'#007a7a','Neutral':'#0094A8','Negative':'#c0006e'};
+    const themes=(q.themes||[]).map(t=>`<span class="theme-chip">${t}</span>`).join('');
+    body=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--ink3)">Dominant sentiment:</span>
+        <span style="font-weight:700;color:${sentColors[sent]||'#888'}">${sent}</span>
+      </div>
+      ${q.themes?.length?`<div><span style="font-size:11px;color:var(--ink3);margin-bottom:4px;display:block">Main themes:</span><div class="themes-wrap">${themes}</div></div>`:''}
+      <div style="font-size:11px;color:var(--ink3);margin-top:8px">${fmt(q.comment_count)} comments · ${fmt(q.answers)} answers</div>`;
+  } else {
+    body=`<div style="font-size:13px;color:var(--ink3)">${fmt(q.answers)} answers</div>`;
+  }
+
+  return `<div class="q-card">
+    <div class="q-card-header">
+      <div class="q-card-id">${q.id||'Q?'}</div>
+      <div class="q-card-meta">
+        <h4>${q.text||'(no text)'}${typeBadge}</h4>
+        <span>${fmt(q.answers)} answers</span>
+      </div>
+    </div>
+    ${body}
+  </div>`;
+}
+
+/* ═══════════ COMPARISON PAGE ═══════════ */
+function renderComparison(){
+  // Populate survey type dropdown
+  const types=[...new Set(surveys.map(s=>s.name).filter(Boolean))];
+  const sel=document.getElementById('comp-survey-select');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Select survey type…</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');
+  if(cur) sel.value=cur;
+  if(sel.value) renderCompContent(sel.value);
+}
+
+document.getElementById('comp-survey-select').addEventListener('change',function(){ renderCompContent(this.value); });
+
+function renderCompContent(surveyType){
+  const el=document.getElementById('comp-content');
+  if(!surveyType){el.innerHTML='<div class="empty-pg"><div class="ep-icon">📊</div><h3>Choose a survey type</h3></div>';return;}
+  const matched=surveys.filter(s=>s.name===surveyType);
+  if(!matched.length){el.innerHTML='<div class="empty-pg"><div class="ep-icon">🔍</div><h3>No results</h3></div>';return;}
+
+  // Team header cards
+  const teamCards=matched.map(s=>{
+    const rr=s.invited>0?Math.round(s.responses/s.invited*100):null;
+    const tc=TEAM_COLORS[s.team]||'#888';
+    return `<div class="comp-team-card" style="--tc:${tc}">
+      <h4>${s.team||'—'}</h4>
+      <div class="comp-stat"><span class="cs-label">Invited</span><span class="cs-val">${fmt(s.invited)}</span></div>
+      <div class="comp-stat"><span class="cs-label">Responses</span><span class="cs-val">${fmt(s.responses)}</span></div>
+      <div class="comp-stat"><span class="cs-label">Response Rate</span><span class="cs-val" style="color:${rrColor(rr||0)}">${rr!==null?rr+'%':'—'}</span></div>
+      <div class="comp-stat"><span class="cs-label">Status</span><span class="cs-val">${s.status||'—'}</span></div>
+      <div style="margin-top:8px"><div style="height:5px;background:var(--paper3);border-radius:99px;overflow:hidden"><div style="height:100%;background:${tc};width:${rr||0}%;border-radius:99px"></div></div></div>
+    </div>`;
+  }).join('');
+
+  // Cross-team heatmap
+  // Collect all question IDs across all matched surveys
+  const allQIds=[...new Set(matched.flatMap(s=>(s.questions||[]).map(q=>q.id)))];
+  const allQTexts={};
+  matched.forEach(s=>(s.questions||[]).forEach(q=>{if(!allQTexts[q.id])allQTexts[q.id]=q.text;}));
+
+  let crossHeatmap='';
+  if(allQIds.length){
+    const headerCells=matched.map(s=>{
+      const tc=TEAM_COLORS[s.team]||'#888';
+      return `<th class="hm-th" style="color:${tc}">${s.team||'—'}</th>`;
+    }).join('');
+    const bodyRows=allQIds.map(qid=>{
+      const cells=matched.map(s=>{
+        const q=(s.questions||[]).find(x=>x.id===qid);
+        if(!q||q.pct_positive===undefined) return '<td class="hm-td" style="color:var(--ink3)">—</td>';
+        const pct=q.pct_positive;
+        const bg=heatColor(pct);
+        return `<td class="hm-td" style="background:${bg};color:#fff">${pct}%</td>`;
+      }).join('');
+      return `<tr>
+        <td class="hm-td hm-td-q"><div class="hm-qid">${qid}</div><div class="hm-qtext">${allQTexts[qid]||''}</div></td>
+        ${cells}
+      </tr>`;
+    }).join('');
+    crossHeatmap=`
+      <div class="section-title" style="margin:24px 0 12px">Cross-Team Heatmap — % Positive per Question</div>
+      <div class="cross-heatmap-wrap"><div class="cross-heatmap-scroll">
+        <table class="heatmap-table">
+          <thead><tr><th class="hm-th hm-th-q">Question</th>${headerCells}</tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div></div>`;
+  }
+
+  // Best/worst per question
+  let rankTable='';
+  if(allQIds.length){
+    const rankRows=allQIds.map(qid=>{
+      const results=matched.map(s=>{
+        const q=(s.questions||[]).find(x=>x.id===qid);
+        return{team:s.team,pct:q?.pct_positive};
+      }).filter(x=>x.pct!==undefined).sort((a,b)=>b.pct-a.pct);
+      if(!results.length)return'';
+      const best=results[0]; const worst=results[results.length-1];
+      return `<tr>
+        <td><strong>${qid}</strong><div style="font-size:11px;color:var(--ink3)">${allQTexts[qid]||''}</div></td>
+        <td><span style="color:${TEAM_COLORS[best.team]||'#888'};font-weight:700">${best.team}</span> <span style="color:#007a7a;font-weight:700">${best.pct}%</span></td>
+        <td><span style="color:${TEAM_COLORS[worst.team]||'#888'};font-weight:700">${worst.team}</span> <span style="color:#c0006e;font-weight:700">${worst.pct}%</span></td>
+        <td style="font-weight:600">${(best.pct-worst.pct).toFixed(0)} pp</td>
+      </tr>`;
+    }).filter(Boolean).join('');
+    if(rankRows) rankTable=`
+      <div class="section-title" style="margin:24px 0 12px">Strongest & Weakest Team per Question</div>
+      <div class="table-card"><div class="tbl-scroll"><table>
+        <thead><tr><th>Question</th><th>Strongest Team</th><th>Needs Most Attention</th><th>Gap</th></tr></thead>
+        <tbody>${rankRows}</tbody>
+      </table></div></div>`;
+  }
+
+  el.innerHTML=`
+    <div class="comp-header-grid">${teamCards}</div>
+    ${crossHeatmap}
+    ${rankTable}`;
+}
+
+/* ═══════════ IMPORT PAGE ═══════════ */
+function renderImportList(){
+  document.getElementById('stored-count').textContent=surveys.length;
+  const el=document.getElementById('import-list-wrap');
+  if(!surveys.length){el.innerHTML='<div class="empty-pg" style="padding:30px"><div class="ep-icon">📭</div><h3>No surveys stored</h3></div>';return;}
+  const rows=surveys.map(s=>`<tr>
+    <td><strong>${s.name}</strong></td>
+    <td>${s.team||'—'}</td>
+    <td>${s.category||'—'}</td>
+    <td>${fmtDate(s.launchDate)}</td>
+    <td>${fmt(s.invited)}</td>
+    <td>${fmt(s.responses)}</td>
+    <td><button class="mbtn danger" style="font-size:11px;padding:3px 10px" data-del="${s.id}">Remove</button></td>
+  </tr>`).join('');
+  el.innerHTML=`<div class="tbl-scroll"><table>
+    <thead><tr><th>Survey</th><th>Team</th><th>Category</th><th>Launch</th><th>Invited</th><th>Responses</th><th></th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+  el.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click',async()=>{
+      const id=btn.dataset.del;
+      const s=surveys.find(x=>x.id===id);
+      if(!await confirm(`Remove "${s?.name}"?`,'This survey will be permanently deleted.','Remove'))return;
+      surveys=surveys.filter(x=>x.id!==id);
+      saveData(); renderImportList(); renderSummary();
+      toast(`Removed "${s?.name}"`);
+    });
+  });
+}
+
+/* Add survey manually */
+document.getElementById('add-survey-btn').addEventListener('click',()=>{
+  const name=document.getElementById('f-name').value.trim();
+  const team=document.getElementById('f-team').value;
+  if(!name||!team){toast('⚠️ Survey Name and Team are required');return;}
+  let questions=[];
+  try{
+    const raw=document.getElementById('f-questions').value.trim();
+    if(raw) questions=JSON.parse(raw);
+  }catch(e){toast('⚠️ Invalid JSON in questions field');return;}
+  const s={
+    id:uid(), name, category:document.getElementById('f-cat').value.trim()||'General',
+    team, status:document.getElementById('f-status').value,
+    launchDate:document.getElementById('f-launch').value,
+    closeDate:document.getElementById('f-close').value,
+    invited:+document.getElementById('f-invited').value||0,
+    responses:+document.getElementById('f-responses').value||0,
+    questions, createdAt:new Date().toISOString()
+  };
+  surveys.push(s);
+  saveData(); renderImportList(); renderSummary();
+  document.getElementById('clear-form-btn').click();
+  toast(`✓ Added "${name}"`);
+});
+document.getElementById('clear-form-btn').addEventListener('click',()=>{
+  ['f-name','f-cat','f-launch','f-close','f-invited','f-responses','f-questions'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-team').value='';
+  document.getElementById('f-status').value='Completed';
+});
+
+/* CSV import */
+function handleCSV(text, fname){
+  const result=Papa.parse(text,{header:true,skipEmptyLines:true,dynamicTyping:true});
+  if(!result.data.length){toast('⚠️ No data in file');return;}
+  let added=0;
+  result.data.forEach(row=>{
+    const name=(row['Survey Name']||row['survey name']||row['name']||'').toString().trim();
+    const team=(row['Capability Team']||row['Team']||row['team']||'').toString().trim();
+    if(!name||!team)return;
+    // Dedup by name+team+launchDate
+    const launch=(row['Launch Date']||row['launch date']||'').toString().trim();
+    const exists=surveys.some(s=>s.name===name&&s.team===team&&s.launchDate===launch);
+    if(exists)return;
+    // Parse questions from columns Q1 Text, Q1 Type, Q1 Answers, Q1 % Positive, Q1 Avg Score …
+    const questions=[];
+    let qi=1;
+    while(row[`Q${qi} Text`]||row[`Q${qi} text`]){
+      const qtext=(row[`Q${qi} Text`]||row[`Q${qi} text`]||'').toString();
+      const qtype=(row[`Q${qi} Type`]||row[`Q${qi} type`]||'Likert').toString();
+      const qans =+(row[`Q${qi} Answers`]||row[`Q${qi} answers`]||0);
+      const qpct =+(row[`Q${qi} % Positive`]||row[`Q${qi} % positive`]||0);
+      const qavg =+(row[`Q${qi} Avg Score`]||row[`Q${qi} avg score`]||0);
+      questions.push({id:`Q${qi}`,text:qtext,type:qtype,answers:qans,pct_positive:qpct,avg_score:qavg||undefined});
+      qi++;
+    }
+    surveys.push({
+      id:uid(), name, team,
+      category:(row['Category']||row['category']||'General').toString().trim(),
+      status:(row['Status']||row['status']||'Completed').toString().trim(),
+      launchDate:launch,
+      closeDate:(row['Close Date']||row['close date']||'').toString().trim(),
+      invited:+(row['People Invited']||row['Invited']||row['invited']||0),
+      responses:+(row['Responses']||row['responses']||0),
+      questions, createdAt:new Date().toISOString()
+    });
+    added++;
+  });
+  saveData(); renderImportList(); renderSummary();
+  toast(added?`✓ Added ${added} survey${added>1?'s':''}`:'ℹ️ No new surveys found (duplicates skipped)');
+}
+
+['csv-input','csv-quick'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',function(e){
+    const f=e.target.files[0]; if(!f)return;
+    const r=new FileReader(); r.onload=ev=>handleCSV(ev.target.result,f.name); r.readAsText(f);
+    this.value='';
+  });
+});
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];if(!f)return;
+  const r=new FileReader();r.onload=ev=>handleCSV(ev.target.result,f.name);r.readAsText(f);
+});
+
+/* Export */
+document.getElementById('export-btn').addEventListener('click',()=>{
+  if(!surveys.length){toast('Nothing to export');return;}
+  const blob=new Blob([JSON.stringify(surveys,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`surveys_backup_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
+  toast('✓ Exported as JSON backup');
+});
+
+/* Clear all */
+document.getElementById('clear-btn').addEventListener('click',async()=>{
+  if(!surveys.length){toast('Nothing to clear');return;}
+  if(!await confirm('Clear all data?',`Permanently delete all ${surveys.length} stored surveys?`,'Clear all'))return;
+  surveys=[];saveData();renderSummary();renderImportList();
+  toast('✓ All data cleared');
+});
+
+/* ═══════════ DEMO DATA ═══════════ */
+function loadDemo(){
+  if(surveys.length)return;
+  const makeQs=(vals)=>vals.map((v,i)=>({
+    id:`Q${i+1}`,text:v.text,type:v.type||'Likert',answers:v.answers||Math.round(80+Math.random()*30),
+    pct_positive:v.pct||(40+Math.round(Math.random()*50)),
+    avg_score:v.avg||(2.5+Math.random()*2),
+    distribution:v.type==='Text'?undefined:{'Strongly Disagree':Math.round(Math.random()*8),'Disagree':Math.round(Math.random()*12),'Neutral':Math.round(Math.random()*15),'Agree':Math.round(Math.random()*30+15),'Strongly Agree':Math.round(Math.random()*25+10)},
+    sentiment:v.type==='Text'?(['Positive','Neutral','Negative'][Math.floor(Math.random()*3)]):undefined,
+    themes:v.type==='Text'?['Recognition','Workload','Career growth']:undefined,
+    comment_count:v.type==='Text'?Math.round(Math.random()*40):undefined
+  }));
+  const valueQs=[
+    {text:'I feel my contributions are valued by the team',pct:72,avg:3.8},
+    {text:'My manager recognises good work regularly',pct:65,avg:3.5},
+    {text:'There is a culture of openness and transparency',pct:58,avg:3.2},
+    {text:'I feel psychologically safe to speak up',pct:70,avg:3.7},
+    {text:'Collaboration across teams is effective',pct:55,avg:3.1},
+    {text:'Additional comments on team culture',type:'Text'}
+  ];
+  const enpsQs=[
+    {text:'On a scale of 0–10, how likely are you to recommend us as a place to work?',type:'Rating',pct:68,avg:7.2},
+    {text:'What would most improve your experience?',type:'Text'}
+  ];
+  const workshopQs=[
+    {text:'The workshop content was relevant to my role',pct:82,avg:4.1},
+    {text:'The facilitator explained concepts clearly',pct:88,avg:4.4},
+    {text:'I will apply what I learned within 30 days',pct:74,avg:3.9},
+    {text:'Overall workshop rating',type:'Rating',pct:80,avg:4.0}
+  ];
+
+  const data=[
+    {name:'Value-based Behaviour Survey',cat:'Value-based Behaviour',team:'Finance',launch:'2026-01-10',close:'2026-01-24',invited:32,responses:28,status:'Completed',qs:valueQs},
+    {name:'Value-based Behaviour Survey',cat:'Value-based Behaviour',team:'Operations',launch:'2026-01-10',close:'2026-01-24',invited:45,responses:38,status:'Completed',qs:valueQs.map(q=>({...q,pct:q.pct?(q.pct-5+Math.round(Math.random()*10)):undefined,avg:q.avg?(q.avg-0.2+Math.random()*0.4):undefined}))},
+    {name:'Value-based Behaviour Survey',cat:'Value-based Behaviour',team:'Business Growth',launch:'2026-01-15',close:'2026-01-29',invited:28,responses:19,status:'Completed',qs:valueQs.map(q=>({...q,pct:q.pct?(q.pct-10+Math.round(Math.random()*12)):undefined}))},
+    {name:'Value-based Behaviour Survey',cat:'Value-based Behaviour',team:'Investment/Legal',launch:'2026-02-01',close:'2026-02-14',invited:18,responses:14,status:'Completed',qs:valueQs.map(q=>({...q,pct:q.pct?(q.pct+5+Math.round(Math.random()*8)):undefined}))},
+    {name:'Value-based Behaviour Survey',cat:'Value-based Behaviour',team:'Core Enablers',launch:'2026-02-01',close:null,invited:22,responses:9,status:'In progress',qs:valueQs.map(q=>({...q,pct:q.pct?(q.pct-8+Math.round(Math.random()*10)):undefined}))},
+    {name:'Employee NPS Q1 2026',cat:'eNPS',team:'Finance',launch:'2026-01-05',close:'2026-01-12',invited:32,responses:30,status:'Completed',qs:enpsQs},
+    {name:'Employee NPS Q1 2026',cat:'eNPS',team:'Operations',launch:'2026-01-05',close:'2026-01-12',invited:45,responses:40,status:'Completed',qs:enpsQs.map(q=>({...q,pct:q.pct?q.pct+5:undefined}))},
+    {name:'Agile Workshop Feedback',cat:'Workshop Feedback',team:'Business Growth',launch:'2026-02-15',close:'2026-02-15',invited:20,responses:18,status:'Completed',qs:workshopQs},
+    {name:'Agile Workshop Feedback',cat:'Workshop Feedback',team:'Core Enablers',launch:'2026-02-20',close:'2026-02-20',invited:15,responses:13,status:'Completed',qs:workshopQs.map(q=>({...q,pct:q.pct?q.pct-8:undefined}))},
+  ];
+
+  data.forEach(d=>{
+    surveys.push({
+      id:uid(),name:d.name,category:d.cat,team:d.team,
+      launchDate:d.launch,closeDate:d.close||'',
+      invited:d.invited,responses:d.responses,status:d.status,
+      questions:makeQs(d.qs),createdAt:new Date().toISOString()
+    });
+  });
+  saveData();
+}
+
+/* ═══════════ INIT ═══════════ */
+loadData();
+loadDemo();
+updateStorageBar();
+renderSummary();
+renderImportList();
+</script>
+</body>
+</html>
