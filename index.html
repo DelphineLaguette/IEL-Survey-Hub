@@ -1025,7 +1025,7 @@ function handleCSV(text, fname){
 ['csv-input','csv-quick'].forEach(id=>{
   document.getElementById(id).addEventListener('change',function(e){
     const f=e.target.files[0]; if(!f)return;
-    const r=new FileReader(); r.onload=ev=>handleCSV(ev.target.result,f.name); r.readAsText(f);
+    const r=new FileReader(); r.onload=ev=>handleCSV(ev.target.result,f.name); r.readAsText(f,'UTF-8');
     this.value='';
   });
 });
@@ -1035,7 +1035,7 @@ dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
 dz.addEventListener('drop',e=>{
   e.preventDefault();dz.classList.remove('drag-over');
   const f=e.dataTransfer.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>handleCSV(ev.target.result,f.name);r.readAsText(f);
+  const r=new FileReader();r.onload=ev=>handleCSV(ev.target.result,f.name);r.readAsText(f,'UTF-8');
 });
 
 /* Export */
