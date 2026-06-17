@@ -280,7 +280,7 @@ tbody tr:hover td{background:var(--paper2)}
   </nav>
   <div class="sidebar-footer">
     <label class="import-btn-side">
-      <input type="file" accept=".csv" id="csv-quick"/>
+      <input type="file" accept=".csv,text/csv,application/csv" id="csv-quick"/>
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v8M4 7l4 4 4-4M2 13h12"/></svg>
       <span>Quick Import</span>
     </label>
@@ -446,7 +446,7 @@ tbody tr:hover td{background:var(--paper2)}
 
   <!-- CSV drop -->
   <div class="drop-zone" id="drop-zone">
-    <input type="file" accept=".csv" id="csv-input"/>
+    <input type="file" accept=".csv,text/csv,application/csv" id="csv-input"/>
     <div class="dz-icon">📄</div>
     <strong>Drop Microsoft Forms CSV export here</strong>
     <span>or click to browse — rows are matched and merged</span>
@@ -1014,11 +1014,15 @@ function handleFormsCSV(data, fname){
 }
 
 function handleCSV(text, fname){
+  // Detect Microsoft Forms raw response CSV from first line of raw text (before PapaParse)
+  const firstLine=text.split('\n')[0];
+  if(firstLine.includes('Start time')&&firstLine.includes('Completion time')){
+    const result=Papa.parse(text,{header:true,skipEmptyLines:true,dynamicTyping:true,quoteChar:'"',escapeChar:'"'});
+    if(result.data.length){handleFormsCSV(result.data,fname);}else{toast('⚠️ No data in file');}
+    return;
+  }
   const result=Papa.parse(text,{header:true,skipEmptyLines:true,dynamicTyping:true});
   if(!result.data.length){toast('⚠️ No data in file');return;}
-  // Detect Microsoft Forms raw response CSV
-  const keys=Object.keys(result.data[0]).map(k=>k.toLowerCase().trim());
-  if(keys.includes('start time')&&keys.includes('completion time')){handleFormsCSV(result.data,fname);return;}
   let added=0;
   result.data.forEach(row=>{
     const name=(row['Survey Name']||row['survey name']||row['name']||'').toString().trim();
