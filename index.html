@@ -989,7 +989,8 @@ function handleFormsCSV(data, fname){
   const allCols=Object.keys(data[0]);
   const deptKey=allCols.find(k=>k.toLowerCase().trim()==='department')||'';
   const team=deptKey?(data[0][deptKey]||'').toString().trim():'';
-  if(surveys.some(s=>s.name===name&&s.team===team)){toast('ℹ️ No new surveys found (duplicates skipped)');return;}
+  const dupIdx=surveys.findIndex(s=>s.name===name&&s.team===team);
+  if(dupIdx!==-1){surveys.splice(dupIdx,1);}
   const qCols=allCols.filter(c=>!META.includes(c.toLowerCase().trim()));
   const questions=qCols.map((col,i)=>{
     const vals=data.map(r=>r[col]).filter(v=>v!==''&&v!==null&&v!==undefined);
