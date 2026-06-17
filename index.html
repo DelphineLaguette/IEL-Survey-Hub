@@ -982,9 +982,43 @@ document.getElementById('clear-form-btn').addEventListener('click',()=>{
 });
 
 /* CSV import */
+function handleFormsCSV(data, fname){
+  // Derive survey name from filename (strip leading hash prefix and extension)
+  const name=fname.replace(/^[a-f0-9]+-/i,'').replace(/\.csv$/i,'').replace(/_/g,' ').trim();
+  const META=['id','start time','completion time','email','name','last modified time','department'];
+  const allCols=Object.keys(data[0]);
+  const deptKey=allCols.find(k=>k.toLowerCase().trim()==='department')||'';
+  const team=deptKey?(data[0][deptKey]||'').toString().trim():'';
+  if(surveys.some(s=>s.name===name&&s.team===team)){toast('ℹ️ No new surveys found (duplicates skipped)');return;}
+  const qCols=allCols.filter(c=>!META.includes(c.toLowerCase().trim()));
+  const questions=qCols.map((col,i)=>{
+    const vals=data.map(r=>r[col]).filter(v=>v!==''&&v!==null&&v!==undefined);
+    const nums=vals.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+    const isNum=nums.length===vals.length&&vals.length>0;
+    let type,avg_score,pct_positive,answers;
+    if(isNum){
+      const isNPS=/recommend|likely/i.test(col);
+      type=isNPS?'NPS':'Likert';
+      avg_score=Math.round(nums.reduce((a,b)=>a+b,0)/nums.length*100)/100;
+      pct_positive=Math.round((isNPS?nums.filter(v=>v>=9):nums.filter(v=>v>=4)).length/nums.length*100);
+      answers=nums.length;
+    }else{
+      type='Open';avg_score=undefined;pct_positive=0;answers=vals.length;
+    }
+    const text=col.replace(/\s*\(1\s+not at all.*?\)/gi,'').replace(/\s*\(\d+=.*?\)/gi,'').trim();
+    return{id:`Q${i+1}`,text,type,answers,pct_positive,avg_score};
+  });
+  surveys.push({id:uid(),name,team,category:'Workshop',status:'Completed',launchDate:'',closeDate:'',invited:data.length,responses:data.length,questions,createdAt:new Date().toISOString()});
+  saveData();renderImportList();renderSummary();
+  toast(`✓ Added survey "${name}"`);
+}
+
 function handleCSV(text, fname){
   const result=Papa.parse(text,{header:true,skipEmptyLines:true,dynamicTyping:true});
   if(!result.data.length){toast('⚠️ No data in file');return;}
+  // Detect Microsoft Forms raw response CSV
+  const keys=Object.keys(result.data[0]).map(k=>k.toLowerCase().trim());
+  if(keys.includes('start time')&&keys.includes('completion time')){handleFormsCSV(result.data,fname);return;}
   let added=0;
   result.data.forEach(row=>{
     const name=(row['Survey Name']||row['survey name']||row['name']||'').toString().trim();
