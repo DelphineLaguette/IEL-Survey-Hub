@@ -991,13 +991,12 @@ function renderCompContent(ids){
         <td><strong>${qid}</strong><div style="font-size:11px;color:var(--ink3)">${allQTexts[qid]||''}</div></td>
         <td><span style="color:${TEAM_COLORS[best.team]||'#888'};font-weight:700">${best.team}</span> <span style="color:#007a7a;font-weight:700">${best.pct}%</span></td>
         <td><span style="color:${TEAM_COLORS[worst.team]||'#888'};font-weight:700">${worst.team}</span> <span style="color:#c0006e;font-weight:700">${worst.pct}%</span></td>
-        <td style="font-weight:600">${(best.pct-worst.pct).toFixed(0)} pp</td>
       </tr>`;
     }).filter(Boolean).join('');
     if(rankRows) rankTable=`
       <div class="section-title" style="margin:24px 0 12px">Strongest & Weakest Team per Question</div>
       <div class="table-card"><div class="tbl-scroll"><table>
-        <thead><tr><th>Question</th><th>Strongest Team</th><th>Needs Most Attention</th><th>Gap</th></tr></thead>
+        <thead><tr><th>Question</th><th>Strongest Team</th><th>Needs Most Attention</th></tr></thead>
         <tbody>${rankRows}</tbody>
       </table></div></div>`;
   }
