@@ -486,6 +486,10 @@ tbody tr:hover td{background:var(--paper2)}
         <input id="edit-name" type="text" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
       </div>
       <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Survey Type <span style="font-weight:400;color:var(--ink3)">(used for Team Comparison grouping)</span></label>
+        <input id="edit-surveytype" type="text" placeholder="e.g. Value Based Behaviour Workshop" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+      </div>
+      <div>
         <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Capability Team *</label>
         <select id="edit-team" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none">
           <option value="">Select…</option>
@@ -882,7 +886,7 @@ function renderQCard(q){
 /* ═══════════ COMPARISON PAGE ═══════════ */
 function renderComparison(){
   // Populate survey type dropdown
-  const types=[...new Set(surveys.map(s=>s.name).filter(Boolean))];
+  const types=[...new Set(surveys.map(s=>s.surveyType||s.name).filter(Boolean))];
   const sel=document.getElementById('comp-survey-select');
   const cur=sel.value;
   sel.innerHTML='<option value="">Select survey type…</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');
@@ -895,7 +899,7 @@ document.getElementById('comp-survey-select').addEventListener('change',function
 function renderCompContent(surveyType){
   const el=document.getElementById('comp-content');
   if(!surveyType){el.innerHTML='<div class="empty-pg"><div class="ep-icon">📊</div><h3>Choose a survey type</h3></div>';return;}
-  const matched=surveys.filter(s=>s.name===surveyType);
+  const matched=surveys.filter(s=>(s.surveyType||s.name)===surveyType);
   if(!matched.length){el.innerHTML='<div class="empty-pg"><div class="ep-icon">🔍</div><h3>No results</h3></div>';return;}
 
   // Team header cards
@@ -1019,6 +1023,7 @@ function openEditModal(id){
   const s=surveys.find(x=>x.id===id);if(!s)return;
   const ov=document.getElementById('edit-ov');
   document.getElementById('edit-name').value=s.name||'';
+  document.getElementById('edit-surveytype').value=s.surveyType||s.name||'';
   document.getElementById('edit-team').value=s.team||'';
   document.getElementById('edit-category').value=s.category||'';
   document.getElementById('edit-status').value=s.status||'Completed';
@@ -1035,6 +1040,7 @@ function openEditModal(id){
     const team=document.getElementById('edit-team').value;
     if(!name||!team){toast('⚠️ Name and Team are required');return;}
     s.name=name;
+    s.surveyType=document.getElementById('edit-surveytype').value.trim()||name;
     s.team=team;
     s.category=document.getElementById('edit-category').value.trim()||s.category;
     s.status=document.getElementById('edit-status').value;
