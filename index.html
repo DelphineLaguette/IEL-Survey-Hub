@@ -370,16 +370,11 @@ tbody tr:hover td{background:var(--paper2)}
 <section class="page" id="page-comparison">
   <div class="page-header">
     <h2>Team Comparison</h2>
-    <p>Group same surveys across all capability teams — spot strengths and gaps at a glance</p>
+    <p>Select 2 or more surveys to compare results across teams</p>
   </div>
-
-  <div class="filters-bar">
-    <span class="filter-label">Survey type:</span>
-    <select class="filter-select" id="comp-survey-select"><option value="">Select survey type…</option></select>
-  </div>
-
+  <div id="comp-picker" style="margin-bottom:20px"></div>
   <div id="comp-content">
-    <div class="empty-pg"><div class="ep-icon">📊</div><h3>Choose a survey type</h3><p>Select a survey type above to compare results across all capability teams.</p></div>
+    <div class="empty-pg"><div class="ep-icon">📊</div><h3>Select surveys above</h3><p>Tick 2 or more surveys to see the comparison.</p></div>
   </div>
 </section>
 
@@ -884,29 +879,34 @@ function renderQCard(q){
 }
 
 /* ═══════════ COMPARISON PAGE ═══════════ */
-const TEAM_WORDS=['Finance','Finances','Operations','Ops','Investment','Legal','Business Growth','BG','Core Enablers'];
-function compGroupKey(s){
-  if(s.surveyType) return s.surveyType;
-  let n=s.name||'';
-  TEAM_WORDS.forEach(t=>{n=n.replace(new RegExp('(?:^|[\\s_\\-])'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:[\\s_\\-]|$)','gi'),' ');});
-  return n.trim().replace(/\s+/g,' ')||s.name;
-}
-
 function renderComparison(){
-  const types=[...new Set(surveys.map(s=>compGroupKey(s)).filter(Boolean))];
-  const sel=document.getElementById('comp-survey-select');
-  const cur=sel.value;
-  sel.innerHTML='<option value="">Select survey type…</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');
-  if(cur) sel.value=cur;
-  if(sel.value) renderCompContent(sel.value);
+  const picker=document.getElementById('comp-picker');
+  if(!surveys.length){picker.innerHTML='<div class="empty-pg"><div class="ep-icon">📭</div><h3>No surveys yet</h3></div>';return;}
+  const checked=new Set([...picker.querySelectorAll('input:checked')].map(i=>i.value));
+  picker.innerHTML=`<div style="background:var(--paper);border:1px solid var(--line2);border-radius:var(--rl);padding:16px">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px">Select surveys to compare</div>
+    <div style="display:grid;gap:8px">${surveys.map(s=>{
+      const tc=TEAM_COLORS[s.team]||'#888';
+      const isChecked=checked.has(s.id)?'checked':'';
+      return `<label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 10px;border-radius:var(--r);border:1px solid var(--line2);transition:background .12s" onmouseover="this.style.background='var(--paper3)'" onmouseout="this.style.background=''">
+        <input type="checkbox" value="${s.id}" ${isChecked} style="width:15px;height:15px;accent-color:${tc};flex-shrink:0"/>
+        <span style="font-weight:600;flex:1">${s.name}</span>
+        <span style="font-size:12px;color:${tc};font-weight:700">${s.team||'—'}</span>
+      </label>`;
+    }).join('')}</div>
+    <button class="mbtn" onclick="runComparison()" style="margin-top:14px;background:#00B4B4;color:#fff;border-color:#00B4B4">Compare selected →</button>
+  </div>`;
 }
 
-document.getElementById('comp-survey-select').addEventListener('change',function(){ renderCompContent(this.value); });
+function runComparison(){
+  const ids=[...document.querySelectorAll('#comp-picker input:checked')].map(i=>i.value);
+  if(ids.length<2){toast('⚠️ Select at least 2 surveys to compare');return;}
+  renderCompContent(ids);
+}
 
-function renderCompContent(surveyType){
+function renderCompContent(ids){
   const el=document.getElementById('comp-content');
-  if(!surveyType){el.innerHTML='<div class="empty-pg"><div class="ep-icon">📊</div><h3>Choose a survey type</h3></div>';return;}
-  const matched=surveys.filter(s=>compGroupKey(s)===surveyType);
+  const matched=surveys.filter(s=>ids.includes(s.id));
   if(!matched.length){el.innerHTML='<div class="empty-pg"><div class="ep-icon">🔍</div><h3>No results</h3></div>';return;}
 
   // Team header cards
