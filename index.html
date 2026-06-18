@@ -1084,7 +1084,10 @@ function handleFormsCSV(data, fname){
   const META=['id','start time','completion time','email','name','last modified time','department'];
   const allCols=Object.keys(data[0]);
   const deptKey=allCols.find(k=>k.toLowerCase().trim()==='department')||'';
-  const team=deptKey?(data[0][deptKey]||'').toString().trim():'';
+  const rawTeam=deptKey?(data[0][deptKey]||'').toString().trim():'';
+  // Normalize department names to match known teams
+  const TEAM_NORM={'finances':'Finance','finance':'Finance','operations':'Operations','investment':'Investment/Legal','legal':'Investment/Legal','business growth':'Business Growth','core enablers':'Core Enablers'};
+  const team=TEAM_NORM[rawTeam.toLowerCase()]||TEAMS.find(t=>rawTeam.toLowerCase().includes(t.toLowerCase()))||rawTeam;
   const dupIdx=surveys.findIndex(s=>s.name===name&&s.team===team);
   if(dupIdx!==-1){surveys.splice(dupIdx,1);}
   const qCols=allCols.filter(c=>!META.includes(c.toLowerCase().trim()));
