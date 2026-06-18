@@ -350,7 +350,12 @@ tbody tr:hover td{background:var(--paper2)}
   <div class="back-btn" id="back-to-summary">← Back to overview</div>
   <div class="page-header">
     <h2 id="q-page-title">Question Reactions</h2>
-    <p id="q-page-sub">Select a survey from the overview to see its questions</p>
+    <p id="q-page-sub">Select a survey to see its questions</p>
+  </div>
+
+  <div class="filters-bar" style="margin-bottom:20px">
+    <span class="filter-label">Survey:</span>
+    <select class="filter-select" id="q-survey-select" style="min-width:260px"><option value="">Select a survey…</option></select>
   </div>
 
   <div class="survey-meta-bar" id="q-meta-bar"></div>
@@ -583,8 +588,15 @@ function navigate(page){
   document.getElementById('page-'+page).classList.add('active');
   document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
 }
+function populateQSurveySelect(selectedId){
+  const sel=document.getElementById('q-survey-select');
+  sel.innerHTML='<option value="">Select a survey…</option>'+surveys.map(s=>`<option value="${s.id}">${s.name} — ${s.team||'—'}</option>`).join('');
+  if(selectedId) sel.value=selectedId;
+}
+document.getElementById('q-survey-select').addEventListener('change',function(){if(this.value) openSurvey(this.value);});
+
 document.querySelectorAll('.nav-item').forEach(n=>{
-  n.addEventListener('click',()=>{ navigate(n.dataset.page); if(n.dataset.page==='summary') renderSummary(); if(n.dataset.page==='comparison') renderComparison(); if(n.dataset.page==='import') renderImportList(); });
+  n.addEventListener('click',()=>{ navigate(n.dataset.page); if(n.dataset.page==='summary') renderSummary(); if(n.dataset.page==='comparison') renderComparison(); if(n.dataset.page==='import') renderImportList(); if(n.dataset.page==='questions') populateQSurveySelect(selectedSurveyId); });
 });
 document.getElementById('back-to-summary').addEventListener('click',()=>navigate('summary'));
 
@@ -740,6 +752,7 @@ function openSurvey(id, evt){
   if(evt) evt.stopPropagation();
   selectedSurveyId=id;
   navigate('questions');
+  populateQSurveySelect(id);
   renderQuestions(id);
 }
 
@@ -907,8 +920,8 @@ function runComparison(){
 function renderCompContent(ids){
   const el=document.getElementById('comp-content');
   try{
-  const matched=surveys.filter(s=>ids.includes(s.id));
-  if(!matched.length){el.innerHTML='<div class="empty-pg"><div class="ep-icon">🔍</div><h3>No results</h3></div>';return;}
+  const matched=surveys.filter(s=>ids.indexOf(s.id)!==-1);
+  if(!matched.length){el.innerHTML=`<div class="empty-pg"><div class="ep-icon">🔍</div><h3>No surveys matched</h3><p>IDs: ${ids.join(', ')}</p></div>`;return;}
 
   // Team header cards
   const teamCards=matched.map(s=>{
