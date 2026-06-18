@@ -476,6 +476,63 @@ tbody tr:hover td{background:var(--paper2)}
 <!-- Toast -->
 <div id="toast"></div>
 
+<!-- Edit Survey Modal -->
+<div id="edit-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;align-items:center;justify-content:center">
+  <div style="background:var(--paper);border-radius:var(--rl);border:1px solid var(--line2);padding:28px;max-width:480px;width:94%;max-height:90vh;overflow-y:auto">
+    <h3 style="font-family:'DM Serif Display',serif;font-size:18px;margin-bottom:20px">Edit Survey</h3>
+    <div style="display:grid;gap:14px">
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Survey Name *</label>
+        <input id="edit-name" type="text" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Capability Team *</label>
+        <select id="edit-team" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none">
+          <option value="">Select…</option>
+          <option>Finance</option><option>Operations</option>
+          <option>Investment/Legal</option><option>Business Growth</option><option>Core Enablers</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Category</label>
+          <input id="edit-category" type="text" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Status</label>
+          <select id="edit-status" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none">
+            <option>Completed</option><option>In Progress</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Launch Date</label>
+          <input id="edit-launch" type="date" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Close Date</label>
+          <input id="edit-close" type="date" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">People Invited</label>
+          <input id="edit-invited" type="number" min="0" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--ink3);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Responses</label>
+          <input id="edit-responses" type="number" min="0" style="width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:var(--r);font-size:13px;background:var(--paper);color:var(--ink);outline:none;box-sizing:border-box"/>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:22px">
+      <button class="mbtn" id="edit-cancel">Cancel</button>
+      <button class="mbtn" id="edit-save" style="background:#00B4B4;color:#fff;border-color:#00B4B4">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal -->
 <div id="modal-ov">
   <div id="modal-box">
@@ -933,7 +990,10 @@ function renderImportList(){
     <td>${fmtDate(s.launchDate)}</td>
     <td>${fmt(s.invited)}</td>
     <td>${fmt(s.responses)}</td>
-    <td><button class="mbtn danger" style="font-size:11px;padding:3px 10px" data-del="${s.id}">Remove</button></td>
+    <td style="display:flex;gap:6px">
+      <button class="mbtn" style="font-size:11px;padding:3px 10px" data-edit="${s.id}">Edit</button>
+      <button class="mbtn danger" style="font-size:11px;padding:3px 10px" data-del="${s.id}">Remove</button>
+    </td>
   </tr>`).join('');
   el.innerHTML=`<div class="tbl-scroll"><table>
     <thead><tr><th>Survey</th><th>Team</th><th>Category</th><th>Launch</th><th>Invited</th><th>Responses</th><th></th></tr></thead>
@@ -949,6 +1009,42 @@ function renderImportList(){
       toast(`Removed "${s?.name}"`);
     });
   });
+  el.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click',()=>openEditModal(btn.dataset.edit));
+  });
+}
+
+/* Edit survey modal */
+function openEditModal(id){
+  const s=surveys.find(x=>x.id===id);if(!s)return;
+  const ov=document.getElementById('edit-ov');
+  document.getElementById('edit-name').value=s.name||'';
+  document.getElementById('edit-team').value=s.team||'';
+  document.getElementById('edit-category').value=s.category||'';
+  document.getElementById('edit-status').value=s.status||'Completed';
+  document.getElementById('edit-launch').value=s.launchDate||'';
+  document.getElementById('edit-close').value=s.closeDate||'';
+  document.getElementById('edit-invited').value=s.invited||'';
+  document.getElementById('edit-responses').value=s.responses||'';
+  ov.style.display='flex';
+  const close=()=>{ov.style.display='none';};
+  document.getElementById('edit-cancel').onclick=close;
+  ov.onclick=e=>{if(e.target===ov)close();};
+  document.getElementById('edit-save').onclick=()=>{
+    const name=document.getElementById('edit-name').value.trim();
+    const team=document.getElementById('edit-team').value;
+    if(!name||!team){toast('⚠️ Name and Team are required');return;}
+    s.name=name;
+    s.team=team;
+    s.category=document.getElementById('edit-category').value.trim()||s.category;
+    s.status=document.getElementById('edit-status').value;
+    s.launchDate=document.getElementById('edit-launch').value;
+    s.closeDate=document.getElementById('edit-close').value;
+    s.invited=+document.getElementById('edit-invited').value||s.invited;
+    s.responses=+document.getElementById('edit-responses').value||s.responses;
+    saveData();renderImportList();renderSummary();
+    close();toast('✓ Survey updated');
+  };
 }
 
 /* Add survey manually */
