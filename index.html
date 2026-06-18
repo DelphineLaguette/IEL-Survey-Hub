@@ -778,9 +778,9 @@ function renderQuestions(id){
 }
 
 function renderHeatmap(qs, s){
-  const ratingQs = qs.filter(q=>q.type==='Likert'||q.type==='Rating');
+  const ratingQs = qs.filter(q=>q.type==='Likert'||q.type==='Rating'||q.type==='NPS'||q.pct_positive>0||q.avg_score>0);
   if(!ratingQs.length){
-    document.getElementById('heatmap-wrap').innerHTML='<div class="empty-pg"><div class="ep-icon">🔥</div><h3>No rating questions</h3><p>Heatmap requires Likert or Rating questions.</p></div>';
+    document.getElementById('heatmap-wrap').innerHTML='<div class="empty-pg"><div class="ep-icon">🔥</div><h3>No rating questions</h3><p>Heatmap requires Likert, NPS or Rating questions.</p></div>';
     return;
   }
   // For single survey: show questions vs avg score / % positive
@@ -884,9 +884,16 @@ function renderQCard(q){
 }
 
 /* ═══════════ COMPARISON PAGE ═══════════ */
+const TEAM_WORDS=['Finance','Finances','Operations','Ops','Investment','Legal','Business Growth','BG','Core Enablers'];
+function compGroupKey(s){
+  if(s.surveyType) return s.surveyType;
+  let n=s.name||'';
+  TEAM_WORDS.forEach(t=>{n=n.replace(new RegExp('(?:^|[\\s_\\-])'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:[\\s_\\-]|$)','gi'),' ');});
+  return n.trim().replace(/\s+/g,' ')||s.name;
+}
+
 function renderComparison(){
-  // Populate survey type dropdown
-  const types=[...new Set(surveys.map(s=>s.surveyType||s.name).filter(Boolean))];
+  const types=[...new Set(surveys.map(s=>compGroupKey(s)).filter(Boolean))];
   const sel=document.getElementById('comp-survey-select');
   const cur=sel.value;
   sel.innerHTML='<option value="">Select survey type…</option>'+types.map(t=>`<option value="${t}">${t}</option>`).join('');
@@ -899,7 +906,7 @@ document.getElementById('comp-survey-select').addEventListener('change',function
 function renderCompContent(surveyType){
   const el=document.getElementById('comp-content');
   if(!surveyType){el.innerHTML='<div class="empty-pg"><div class="ep-icon">📊</div><h3>Choose a survey type</h3></div>';return;}
-  const matched=surveys.filter(s=>(s.surveyType||s.name)===surveyType);
+  const matched=surveys.filter(s=>compGroupKey(s)===surveyType);
   if(!matched.length){el.innerHTML='<div class="empty-pg"><div class="ep-icon">🔍</div><h3>No results</h3></div>';return;}
 
   // Team header cards
